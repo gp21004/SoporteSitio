@@ -335,6 +335,9 @@
                 `;
                 contenedor.appendChild(tarjeta);
             });
+
+            // Reaplicar el filtro por si hay una búsqueda activa
+            filtrarCorrelativo();
         });
 
         function copiarAlSoporte(s, c, m) {
