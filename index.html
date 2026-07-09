@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Registro en Sitio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+    <script>
+        // ==========================================
+        // 1. PEGA TU CONFIGURACIÓN DE FIREBASE AQUÍ
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCGUR8eR2ObHxnB-v328rRoSJEQZPyG4hY",
+            authDomain: "controlequipos-cd42a.firebaseapp.com",
+            databaseURL: "https://controlequipos-cd42a-default-rtdb.firebaseio.com",
+            projectId: "controlequipos-cd42a",
+            storageBucket: "controlequipos-cd42a.firebasestorage.app",
+            messagingSenderId: "219370224928",
+            appId: "1:219370224928:web:ab964e95cbedadc456eb45"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+    </script>
+    <style>
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background-color: #ededed;
+        }
+    </style>
+</head>
+
+<body class="hold-transition sidebar-mini text-gray-800">
+
+    <nav class="bg-white border-b p-3 flex justify-between items-center shadow-sm">
+        <div class="flex items-center space-x-4">
+            <span class="font-bold text-gray-700 tracking-wide text-sm md:text-base">SISTEMA DE REGISTRO EN SITIO</span>
+        </div>
+        <div class="flex space-x-2">
+            <button onclick="cambiarVista('recepcion')"
+                class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded text-sm shadow-sm transition"><i
+                    class="fas fa-plus mr-1"></i> Recepción</button>
+            <button onclick="cambiarVista('tecnicos')"
+                class="px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded text-sm shadow-sm transition"><i
+                    class="fas fa-tools mr-1"></i> Taller Técnicos</button>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-4 max-w-5xl">
+        <div id="vista-recepcion" class="block pt-2">
+            <div class="bg-white rounded border shadow-sm border-t-4 border-t-blue-600">
+                <div class="p-5">
+                    <form id="form-equipo" onsubmit="guardarEquipo(event)">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">No. de serie</label>
+                                <input type="text" id="serie" required
+                                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                    style="text-transform: uppercase;">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Código C.E.</label>
+                                <input type="text" id="codigo_ce" required
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '');"
+                                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">NIE</label>
+                                <input type="text" id="nie" required
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '');"
+                                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Nombre del
+                                    estudiante</label>
+                                <input type="text" id="nombre" required
+                                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                    style="text-transform: uppercase;">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Grado actual</label>
+                                <select id="grado" required
+                                    class="w-full border border-gray-300 rounded px-3 py-2 bg-white">
+                                    <option value=""></option>
+                                    <option value="PARVULARIA 4">PARVULARIA 4</option>
+                                    <option value="PARVULARIA 5">PARVULARIA 5</option>
+                                    <option value="PARVULARIA 6">PARVULARIA 6</option>
+                                    <option value="PRIMER GRADO">PRIMER GRADO</option>
+                                    <option value="SEGUNDO GRADO">SEGUNDO GRADO</option>
+                                    <option value="TERCER GRADO">TERCER GRADO</option>
+                                    <option value="CUARTO GRADO">CUARTO GRADO</option>
+                                    <option value="QUINTO GRADO">QUINTO GRADO</option>
+                                    <option value="SEXTO GRADO">SEXTO GRADO</option>
+                                    <option value="SEPTIMO GRADO">SEPTIMO GRADO</option>
+                                    <option value="OCTAVO GRADO">OCTAVO GRADO</option>
+                                    <option value="NOVENO GRADO">NOVENO GRADO</option>
+                                    <option value="PRIMER AÑO BACHILLERATO">PRIMER AÑO BACHILLERATO</option>
+                                    <option value="SEGUNDO AÑO BACHILLERATO">SEGUNDO AÑO BACHILLERATO</option>
+                                    <option value="TERCER AÑO BACHILLERATO">TERCER AÑO BACHILLERATO</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Teléfono móvil</label>
+                                <input type="text" id="telefono" maxlength="9" placeholder="0000-0000"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/(\d{4})(\d{1,4})/, '$1-$2');"
+                                    required class="w-full border border-gray-300 rounded px-3 py-2 bg-white">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Tipo de falla</label>
+                                <select id="tipo_falla" required onchange="actualizarOpcionesFalla()"
+                                    class="w-full border border-gray-300 rounded px-3 py-2 bg-white">
+                                    <option value="HARDWARE" selected>HARDWARE</option>
+                                    <option value="SOFTWARE">SOFTWARE</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Falla específica</label>
+                                <select id="falla" required
+                                    class="w-full border border-gray-300 rounded px-3 py-2 bg-white">
+                                    <option value=""></option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 bg-gray-50 p-3 rounded border border-dashed">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2"><i
+                                    class="fas fa-plug text-blue-500 mr-1"></i> ¿Con cargador?</label>
+                            <div class="flex items-center space-x-6">
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="radio" name="cargador" value="SI" required
+                                        class="w-5 h-5 text-blue-600 border-gray-300">
+                                    <span class="ml-2 text-sm font-medium text-gray-700">SI</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="radio" name="cargador" value="NO" required
+                                        class="w-5 h-5 text-blue-600 border-gray-300">
+                                    <span class="ml-2 text-sm font-medium text-gray-700">NO</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Observación (Opcional)</label>
+                            <textarea id="observacion" rows="2"
+                                class="w-full border border-gray-300 rounded px-3 py-2 bg-white"></textarea>
+                        </div>
+
+                        <div class="mt-5 pt-2 border-t flex items-center">
+                            <button type="submit" id="btn-guardar"
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded shadow-sm">Crear
+                                Registro</button>
+                        </div>
+                    </form>
+                    <div id="mensaje-exito"
+                        class="hidden mt-4 p-3 bg-green-100 border border-green-300 text-green-800 text-center text-lg font-bold rounded shadow-sm">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="vista-tecnicos" class="hidden pt-2">
+            <div class="flex justify-between items-center mb-3 border-b pb-2">
+                <div class="text-lg font-normal text-gray-600 flex items-center gap-2">
+                    <i class="fas fa-tools text-sm"></i> <span>Panel de Taller (En Tiempo Real)</span>
+                </div>
+            </div>
+            <div class="mb-4 flex gap-2">
+                <input type="text" id="buscador" placeholder="🔍 Buscar por Nº Correlativo de hoy..."
+                    onkeyup="filtrarCorrelativo()"
+                    class="w-full max-w-md border p-2.5 rounded shadow-sm text-base bg-white">
+            </div>
+            <div id="contenedor-tarjetas" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+    </div>
+
+    <script>
+        // 2. PEGA LA URL DE TU GOOGLE APPS SCRIPT AQUÍ
+        const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyYTwjmySvXIdnJUFYBSJu2ARAWueaVz9km3PnrhEitcdZlQsOlyECc-iANlYfESzKN/exec";
+
+        const fallasHardware = ["NO ENCIENDE", "PANTALLA NO ENCIENDE", "PANTALLA DAÑADA", "BATERIA NO CARGA", "CARGADOR DAÑADO", "TECLADO NO FUNCIONA", "MOUSEPAD NO FUNCIONA", "TOUCHPAD NO FUNCIONA", "CAMARA NO FUNCIONA", "MICROFONO NO FUNCIONA", "MOTHERBOARD DAÑADA", "ALMACENAMIENTO DAÑADO", "FALLA DE VIDEO", "FALLA DE AUDIO", "PUERTO USB DAÑADO", "TARJETA DE RED (INALAMBRICA) DAÑADA", "PUERTO HDMI DAÑADO", "PUERTO DE CARGA DAÑADO", "EQUIPO SE REINICIA", "TARJETA DE RED (ALAMBRICA) DAÑADA", "MEMORIA RAM DAÑADA", "PERDIDA TOTAL", "SOBRECALENTAMIENTO", "CARCASA DAÑADA", "CONTRASEÑA DE BIOS", "FALLA DE TÁCTIL", "FALLA EN BANDEJA DE TARJETA SIM", "HURTO", "BANDEJA DE CHIP FALTANTE", "POR FALTA DE CARGADOR", "PANTALLA QUEBRADA", "FALLA DE LA BATERIA DE CMOS", "VENTILADOR DE DISIPADOR", "PUERTO DE CARGA QUEBRADO", "ROBO", "EXTRAVIO"];
+        const fallasSoftware = ["FALLA EN BIOS", "FALLA EN SISTEMA OPERATIVO", "FALLA EN PROGRAMAS DE APLICACIÓN", "FALLA DE ANTIVIRUS", "FALLA EN DRIVERS", "FALLA DE BLOQUEO", "FALLA DE ACCESO A CUENTAS DE CORREOS ELECTRONICOS INSTITUCIONALES", "NO RECONOCE LA TARJETA SIM", "FALLA EN ACCESO A CUENTA @CLASES", "FALLA EN ACCESO A PLATAFORMA APRENDES"];
+
+        function actualizarOpcionesFalla() {
+            const tipo = document.getElementById('tipo_falla').value;
+            const selectFalla = document.getElementById('falla');
+            selectFalla.innerHTML = '<option value=""></option>';
+            let listaSeleccionada = tipo === 'HARDWARE' ? fallasHardware : fallasSoftware;
+            listaSeleccionada.forEach(f => {
+                const opt = document.createElement('option'); opt.value = f; opt.textContent = f; selectFalla.appendChild(opt);
+            });
+        }
+        document.addEventListener("DOMContentLoaded", actualizarOpcionesFalla);
+
+        function cambiarVista(vista) {
+            document.getElementById('vista-recepcion').style.display = vista === 'recepcion' ? 'block' : 'none';
+            document.getElementById('vista-tecnicos').style.display = vista === 'tecnicos' ? 'block' : 'none';
+        }
+
+        function obtenerFechaHoy() {
+            const date = new Date();
+            return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+        }
+
+        async function guardarEquipo(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-guardar');
+            btn.innerText = "Calculando Correlativo..."; btn.disabled = true;
+
+            const payloadExcel = {
+                action: 'crear',
+                fecha: obtenerFechaHoy(),
+                codigo_ce: document.getElementById('codigo_ce').value,
+                nie: document.getElementById('nie').value,
+                nombre: document.getElementById('nombre').value.toUpperCase(),
+                grado: document.getElementById('grado').value,
+                telefono: document.getElementById('telefono').value,
+                serie: document.getElementById('serie').value.toUpperCase(),
+                falla: document.getElementById('falla').value,
+                cargador: document.querySelector('input[name="cargador"]:checked').value,
+                observacion: document.getElementById('observacion').value
+            };
+
+            try {
+                // Fetch seguro para Google Sheets
+                const response = await fetch(URL_GOOGLE_SHEETS, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payloadExcel)
+                });
+
+                const resultado = await response.json();
+
+                if (resultado.status === "Éxito") {
+                    const payloadFirebase = { ...payloadExcel, correlativo: resultado.correlativo, estado: 'Pendiente', tecnico: '', timestamp: firebase.database.ServerValue.TIMESTAMP };
+                    await db.ref('equipos').push().set(payloadFirebase);
+
+                    document.getElementById('form-equipo').reset();
+                    document.getElementById('tipo_falla').value = "HARDWARE";
+                    actualizarOpcionesFalla();
+
+                    const msg = document.getElementById('mensaje-exito');
+                    msg.innerHTML = `<i class="fas fa-check-circle mr-1"></i> ¡Registro Creado Exitosamente!<br>Nº Correlativo: <span class="text-xl font-black"># ${resultado.correlativo}</span>`;
+                    msg.style.display = 'block';
+                    setTimeout(() => { msg.style.display = 'none'; }, 6000);
+                } else {
+                    alert("Error servidor: " + resultado.detalle);
+                }
+            } catch (err) { alert("Error de red. Asegúrate de haber desplegado una NUEVA VERSIÓN en Google Apps Script."); }
+            finally { btn.innerText = "Crear Registro"; btn.disabled = false; }
+        }
+
+        db.ref('equipos').orderByChild('timestamp').on('value', (snapshot) => {
+            const contenedor = document.getElementById('contenedor-tarjetas');
+            contenedor.innerHTML = '';
+            if (!snapshot.exists()) { contenedor.innerHTML = '<p class="text-gray-500 italic p-2">No hay registros.</p>'; return; }
+
+            let equipos = [];
+            snapshot.forEach(child => { equipos.push({ idFirebase: child.key, ...child.val() }); });
+            equipos.reverse();
+
+            equipos.forEach(eq => {
+                let colorFondo = eq.estado === 'En Progreso' ? 'bg-yellow-50' : eq.estado === 'Terminado' ? 'bg-green-50' : 'bg-white';
+                const claseCargador = eq.cargador === 'SI' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+
+                const tarjeta = document.createElement('div');
+                tarjeta.className = `${colorFondo} p-4 rounded border shadow-sm tarjeta-equipo`;
+                tarjeta.dataset.correlativo = eq.correlativo;
+                tarjeta.dataset.fecha = eq.fecha;
+
+                tarjeta.innerHTML = `
+                    <div class="flex justify-between border-b pb-1 mb-2">
+                        <span class="text-lg font-black text-gray-800"># ${eq.correlativo}</span>
+                        <span class="text-xs text-gray-400 font-semibold self-center"><i class="far fa-calendar-alt mr-1"></i>${eq.fecha}</span>
+                    </div>
+                    <div class="space-y-1 text-sm text-gray-700">
+                        <p><strong>Código C.E.:</strong> <span class="bg-gray-100 px-1 rounded font-mono">${eq.codigo_ce}</span></p>
+                        <p><strong>NIE:</strong> ${eq.nie} | <strong>Tel:</strong> ${eq.telefono}</p>
+                        <p class="truncate"><strong>Estudiante:</strong> ${eq.nombre}</p>
+                        <p class="text-xs text-gray-500 font-medium"><strong>Grado:</strong> ${eq.grado}</p>
+                        <p class="border-t pt-1 mt-1"><strong>Serie:</strong> <span class="text-blue-700 font-mono font-bold">${eq.serie}</span></p>
+                        <p><strong>¿Con Cargador?:</strong> <span class="px-2 py-0.5 border rounded text-xs font-bold ${claseCargador}">${eq.cargador || 'NO'}</span></p>
+                        <p class="text-red-700 font-medium"><strong>Falla:</strong> ${eq.falla}</p>
+                        ${eq.observacion ? `<p class="text-xs bg-gray-50 p-1 rounded text-gray-600 italic">Obs: ${eq.observacion}</p>` : ''}
+                    </div>
+                    
+                    <button onclick="copiarAlSoporte('${eq.serie}', '${eq.codigo_ce}', '${eq.telefono}')" class="mt-3 w-full text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded shadow-sm">
+                        <i class="fas fa-clipboard"></i> Copiar para Sistema Soporte
+                    </button>
+
+                    <div class="mt-3 pt-2 border-t grid grid-cols-1 gap-1.5">
+                        <label class="text-xs font-bold text-gray-600">Asignar Técnico:</label>
+                        <select class="p-1 text-xs border rounded w-full bg-white" onchange="actualizarDato('${eq.idFirebase}', '${eq.fecha}', ${eq.correlativo}, 'tecnico', this.value)">
+                            <option value="">-- Seleccionar --</option>
+                            <option value="Jonathan Gómez" ${eq.tecnico === 'Jonathan Gómez' ? 'selected' : ''}>Jonathan Gómez</option>
+                            <option value="Cesar Silva" ${eq.tecnico === 'Cesar Silva' ? 'selected' : ''}>Cesar Silva</option>
+                            <option value="Douglas Hernández" ${eq.tecnico === 'Douglas Hernández' ? 'selected' : ''}>Douglas Hernández</option>
+                            <option value="Cintia Sandoval" ${eq.tecnico === 'Cintia Sandoval' ? 'selected' : ''}>Cintia Sandoval</option>
+                            <option value="Geraldina Trujillo" ${eq.tecnico === 'Geraldina Trujillo' ? 'selected' : ''}>Geraldina Trujillo</option>
+                            <option value="Alexis Paniagua" ${eq.tecnico === 'Alexis Paniagua' ? 'selected' : ''}>Alexis Paniagua</option>
+                            <option value="Kemdall Blanco" ${eq.tecnico === 'Kemdall Blanco' ? 'selected' : ''}>Kemdall Blanco</option>
+                            <option value="Fernando Palacios" ${eq.tecnico === 'Fernando Palacios' ? 'selected' : ''}>Fernando Palacios</option>
+                            <option value="Wilber del Cid" ${eq.tecnico === 'Wilber del Cid' ? 'selected' : ''}>Wilber del Cid</option>
+                            <option value="Raúl Cruz" ${eq.tecnico === 'Raúl Cruz' ? 'selected' : ''}>Raúl Cruz</option>
+                            <option value="Victor Latin" ${eq.tecnico === 'Victor Latin' ? 'selected' : ''}>Victor Latin</option>
+                            <option value="Luis Cardona" ${eq.tecnico === 'Luis Cardona' ? 'selected' : ''}>Luis Cardona</option>
+                            <option value="Carlos Romeo" ${eq.tecnico === 'Carlos Romeo' ? 'selected' : ''}>Carlos Romeo</option>
+                        </select>
+                        <label class="text-xs font-bold text-gray-600 mt-1">Estado:</label>
+                        <select class="p-1 text-xs border rounded w-full font-bold ${eq.estado === 'En Progreso' ? 'text-yellow-700' : eq.estado === 'Terminado' ? 'text-green-700' : ''}" onchange="actualizarDato('${eq.idFirebase}', '${eq.fecha}', ${eq.correlativo}, 'estado', this.value)">
+                            <option value="Pendiente" ${eq.estado === 'Pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
+                            <option value="En Progreso" ${eq.estado === 'En Progreso' ? 'selected' : ''}>⚙️ En Progreso</option>
+                            <option value="Terminado" ${eq.estado === 'Terminado' ? 'selected' : ''}>✅ Terminado</option>
+                        </select>
+                    </div>
+
+                    <button onclick="eliminarRegistro('${eq.idFirebase}', '${eq.fecha}', ${eq.correlativo})" class="mt-3 w-full text-xs text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200 font-bold py-1.5 px-3 rounded transition">
+                        <i class="fas fa-trash-alt"></i> Eliminar Registro
+                    </button>
+                `;
+                contenedor.appendChild(tarjeta);
+            });
+        });
+
+        function copiarAlSoporte(s, c, m) {
+            navigator.clipboard.writeText(JSON.stringify({ serie: s, codigo: c, movil: m })).then(() => {
+                alert("📋 ¡Datos copiados!\nVe al Sistema Oficial y presiona CTRL + V.");
+            });
+        }
+
+        function actualizarDato(idFirebase, f, c, campo, valor) {
+            db.ref('equipos/' + idFirebase).update({ [campo]: valor });
+            fetch(URL_GOOGLE_SHEETS, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'actualizar', fecha: f, correlativo: c, campo: campo, valor: valor }) });
+        }
+
+        function eliminarRegistro(idFirebase, f, c) {
+            if (confirm("¿Estás seguro de eliminar este registro permanentemente?")) {
+                db.ref('equipos/' + idFirebase).remove();
+                fetch(URL_GOOGLE_SHEETS, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'eliminar', fecha: f, correlativo: c }) });
+            }
+        }
+
+        function filtrarCorrelativo() {
+            const texto = document.getElementById('buscador').value.trim();
+            const tarjetas = document.querySelectorAll('.tarjeta-equipo');
+            const fechaHoy = obtenerFechaHoy();
+            tarjetas.forEach(t => {
+                if (texto === "" || (t.dataset.correlativo === texto && t.dataset.fecha === fechaHoy)) t.style.display = 'block';
+                else t.style.display = 'none';
+            });
+        }
+    </script>
+</body>
+
+</html>
