@@ -179,19 +179,17 @@
                     <i class="fas fa-tools text-sm"></i> <span>Panel de Taller (En Tiempo Real)</span>
                 </div>
             </div>
-            <div class="mb-4 flex flex-col sm:flex-row gap-2">
-                <input type="text" id="buscador" placeholder="🔍 Buscar por Nº Correlativo..."
-                    oninput="filtrarCorrelativo()"
+            <div class="mb-4 flex gap-2">
+                <input type="text" id="buscador" placeholder="🔍 Buscar por Nº Correlativo de hoy..."
+                    onkeyup="filtrarCorrelativo()"
                     class="w-full max-w-md border p-2.5 rounded shadow-sm text-base bg-white">
-                <input type="date" id="filtro-fecha" onchange="filtrarCorrelativo()"
-                    class="w-full sm:w-auto border p-2.5 rounded shadow-sm text-base bg-white text-gray-700 cursor-pointer">
             </div>
             <div id="contenedor-tarjetas" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
     </div>
 
     <script>
-        // 2. PEGA LA URL DE TU GOOGLE APPS SCRIPT AQUÍ
+        //GOOGLE APPS SCRIPT
         const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbyYTwjmySvXIdnJUFYBSJu2ARAWueaVz9km3PnrhEitcdZlQsOlyECc-iANlYfESzKN/exec";
 
         const fallasHardware = ["NO ENCIENDE", "PANTALLA NO ENCIENDE", "PANTALLA DAÑADA", "BATERIA NO CARGA", "CARGADOR DAÑADO", "TECLADO NO FUNCIONA", "MOUSEPAD NO FUNCIONA", "TOUCHPAD NO FUNCIONA", "CAMARA NO FUNCIONA", "MICROFONO NO FUNCIONA", "MOTHERBOARD DAÑADA", "ALMACENAMIENTO DAÑADO", "FALLA DE VIDEO", "FALLA DE AUDIO", "PUERTO USB DAÑADO", "TARJETA DE RED (INALAMBRICA) DAÑADA", "PUERTO HDMI DAÑADO", "PUERTO DE CARGA DAÑADO", "EQUIPO SE REINICIA", "TARJETA DE RED (ALAMBRICA) DAÑADA", "MEMORIA RAM DAÑADA", "PERDIDA TOTAL", "SOBRECALENTAMIENTO", "CARCASA DAÑADA", "CONTRASEÑA DE BIOS", "FALLA DE TÁCTIL", "FALLA EN BANDEJA DE TARJETA SIM", "HURTO", "BANDEJA DE CHIP FALTANTE", "POR FALTA DE CARGADOR", "PANTALLA QUEBRADA", "FALLA DE LA BATERIA DE CMOS", "VENTILADOR DE DISIPADOR", "PUERTO DE CARGA QUEBRADO", "ROBO", "EXTRAVIO"];
@@ -206,13 +204,7 @@
                 const opt = document.createElement('option'); opt.value = f; opt.textContent = f; selectFalla.appendChild(opt);
             });
         }
-        document.addEventListener("DOMContentLoaded", () => {
-            actualizarOpcionesFalla();
-            const hoy = new Date();
-            const hoyFormateado = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
-            const filtroFecha = document.getElementById('filtro-fecha');
-            if (filtroFecha) filtroFecha.value = hoyFormateado;
-        });
+        document.addEventListener("DOMContentLoaded", actualizarOpcionesFalla);
 
         function cambiarVista(vista) {
             document.getElementById('vista-recepcion').style.display = vista === 'recepcion' ? 'block' : 'none';
@@ -370,24 +362,11 @@
 
         function filtrarCorrelativo() {
             const texto = document.getElementById('buscador').value.trim();
-            const fechaFiltro = document.getElementById('filtro-fecha').value;
-            
-            let fechaFiltroFormateada = "";
-            if (fechaFiltro) {
-                const partes = fechaFiltro.split('-');
-                fechaFiltroFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
-            }
-
             const tarjetas = document.querySelectorAll('.tarjeta-equipo');
+            const fechaHoy = obtenerFechaHoy();
             tarjetas.forEach(t => {
-                const coincideTexto = texto === "" || t.dataset.correlativo.includes(texto);
-                const coincideFecha = fechaFiltroFormateada === "" || t.dataset.fecha === fechaFiltroFormateada;
-
-                if (coincideTexto && coincideFecha) {
-                    t.style.display = 'block';
-                } else {
-                    t.style.display = 'none';
-                }
+                if (texto === "" || (t.dataset.correlativo === texto && t.dataset.fecha === fechaHoy)) t.style.display = 'block';
+                else t.style.display = 'none';
             });
         }
     </script>
