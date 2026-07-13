@@ -179,10 +179,12 @@
                     <i class="fas fa-tools text-sm"></i> <span>Panel de Taller (En Tiempo Real)</span>
                 </div>
             </div>
-            <div class="mb-4 flex gap-2">
-                <input type="text" id="buscador" placeholder="🔍 Buscar por Nº Correlativo de hoy..."
-                    onkeyup="filtrarCorrelativo()"
+            <div class="mb-4 flex flex-col sm:flex-row gap-2">
+                <input type="text" id="buscador" placeholder="🔍 Buscar por Nº Correlativo..."
+                    oninput="filtrarCorrelativo()"
                     class="w-full max-w-md border p-2.5 rounded shadow-sm text-base bg-white">
+                <input type="date" id="filtro-fecha" onchange="filtrarCorrelativo()"
+                    class="w-full sm:w-auto border p-2.5 rounded shadow-sm text-base bg-white text-gray-700 cursor-pointer">
             </div>
             <div id="contenedor-tarjetas" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
@@ -204,7 +206,13 @@
                 const opt = document.createElement('option'); opt.value = f; opt.textContent = f; selectFalla.appendChild(opt);
             });
         }
-        document.addEventListener("DOMContentLoaded", actualizarOpcionesFalla);
+        document.addEventListener("DOMContentLoaded", () => {
+            actualizarOpcionesFalla();
+            const hoy = new Date();
+            const hoyFormateado = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+            const filtroFecha = document.getElementById('filtro-fecha');
+            if (filtroFecha) filtroFecha.value = hoyFormateado;
+        });
 
         function cambiarVista(vista) {
             document.getElementById('vista-recepcion').style.display = vista === 'recepcion' ? 'block' : 'none';
@@ -362,11 +370,24 @@
 
         function filtrarCorrelativo() {
             const texto = document.getElementById('buscador').value.trim();
+            const fechaFiltro = document.getElementById('filtro-fecha').value;
+            
+            let fechaFiltroFormateada = "";
+            if (fechaFiltro) {
+                const partes = fechaFiltro.split('-');
+                fechaFiltroFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+            }
+
             const tarjetas = document.querySelectorAll('.tarjeta-equipo');
-            const fechaHoy = obtenerFechaHoy();
             tarjetas.forEach(t => {
-                if (texto === "" || (t.dataset.correlativo === texto && t.dataset.fecha === fechaHoy)) t.style.display = 'block';
-                else t.style.display = 'none';
+                const coincideTexto = texto === "" || t.dataset.correlativo.includes(texto);
+                const coincideFecha = fechaFiltroFormateada === "" || t.dataset.fecha === fechaFiltroFormateada;
+
+                if (coincideTexto && coincideFecha) {
+                    t.style.display = 'block';
+                } else {
+                    t.style.display = 'none';
+                }
             });
         }
     </script>
