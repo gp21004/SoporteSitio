@@ -8,14 +8,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
 
     <script>
-        // ==========================================
-        // 1. PEGA TU CONFIGURACIÓN DE FIREBASE AQUÍ
-        // ==========================================
+        // ===========================
+        //  CONFIGURACIÓN DE FIREBASE 
+        // ===========================
         const firebaseConfig = {
             apiKey: "AIzaSyCGUR8eR2ObHxnB-v328rRoSJEQZPyG4hY",
             authDomain: "controlequipos-cd42a.firebaseapp.com",
@@ -27,6 +28,9 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        firebase.auth().signInAnonymously().catch(function (error) {
+            console.error("Error de autenticación:", error.message);
+        });
     </script>
     <style>
         body {
@@ -58,7 +62,8 @@
                 <div class="text-lg font-bold text-gray-700 flex items-center gap-2">
                     <i class="fas fa-laptop-medical"></i> <span id="titulo-formulario">REGISTRO DE SOPORTE</span>
                 </div>
-                <button type="button" id="btn-toggle-modo" onclick="toggleModoEntrega()" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded text-sm shadow-sm transition">
+                <button type="button" id="btn-toggle-modo" onclick="toggleModoEntrega()"
+                    class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded text-sm shadow-sm transition">
                     <i class="fas fa-exchange-alt mr-1"></i> Modo Entrega
                 </button>
             </div>
@@ -227,15 +232,15 @@
         function toggleModoEntrega() {
             modoActual = modoActual === 'soporte' ? 'entrega' : 'soporte';
             const esEntrega = modoActual === 'entrega';
-            
+
             const btnToggle = document.getElementById('btn-toggle-modo');
             const cardFormulario = document.getElementById('card-formulario');
-            
-            if(esEntrega) {
+
+            if (esEntrega) {
                 btnToggle.innerHTML = '<i class="fas fa-exchange-alt mr-1"></i> Volver a Registro Soporte';
                 btnToggle.className = 'px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded text-sm shadow-sm transition';
                 document.getElementById('titulo-formulario').innerText = "REGISTRO DE ENTREGA";
-                if(cardFormulario) {
+                if (cardFormulario) {
                     cardFormulario.classList.remove('border-t-blue-600');
                     cardFormulario.classList.add('border-t-purple-600');
                 }
@@ -243,12 +248,12 @@
                 btnToggle.innerHTML = '<i class="fas fa-exchange-alt mr-1"></i> Modo Entrega';
                 btnToggle.className = 'px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded text-sm shadow-sm transition';
                 document.getElementById('titulo-formulario').innerText = "REGISTRO DE SOPORTE";
-                if(cardFormulario) {
+                if (cardFormulario) {
                     cardFormulario.classList.remove('border-t-purple-600');
                     cardFormulario.classList.add('border-t-blue-600');
                 }
             }
-            
+
             const camposSoporte = document.querySelectorAll('.campo-soporte');
             camposSoporte.forEach(el => {
                 el.style.display = esEntrega ? 'none' : 'block';
@@ -402,10 +407,10 @@
             navigator.clipboard.writeText(JSON.stringify({ serie: s, codigo: c, movil: m })).then(() => {
                 const originalHtml = btn.innerHTML;
                 const originalClass = btn.className;
-                
+
                 btn.innerHTML = '<i class="fas fa-check"></i> <span>Copiado</span>';
                 btn.className = "mt-3 w-full text-xs bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded shadow-sm transition";
-                
+
                 setTimeout(() => {
                     btn.innerHTML = originalHtml;
                     btn.className = originalClass;
@@ -428,7 +433,7 @@
         function filtrarCorrelativo() {
             const texto = document.getElementById('buscador').value.trim();
             const fechaFiltro = document.getElementById('filtro-fecha').value;
-            
+
             let fechaFiltroFormateada = "";
             if (fechaFiltro) {
                 const partes = fechaFiltro.split('-');
