@@ -85,16 +85,25 @@
                             </div>
                         </div>
 
+                        <!-- Checkbox Docente -->
+                        <div
+                            class="mb-4 campo-soporte flex items-center bg-blue-50 p-2.5 rounded border border-blue-200 shadow-sm">
+                            <input type="checkbox" id="checkbox-docente" onchange="toggleDocente()"
+                                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
+                            <label for="checkbox-docente"
+                                class="ml-2 block text-sm font-bold text-blue-800 cursor-pointer">
+                                <i class="fas fa-chalkboard-teacher mr-1"></i> ¿El equipo pertenece a un Docente?
+                            </label>
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-1">NIE</label>
-                                <input type="text" id="nie" required
-                                    oninput="this.value = this.value.replace(/[^0-9]/g, '');"
+                                <label id="label-nie" class="block text-sm font-semibold text-gray-700 mb-1">NIE</label>
+                                <input type="text" id="nie" required oninput="validarNieDui(this)"
                                     class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                             </div>
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-1">Nombre del
-                                    estudiante</label>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Nombre Completo</label>
                                 <input type="text" id="nombre" required
                                     class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                                     style="text-transform: uppercase;">
@@ -105,7 +114,7 @@
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-1">Grado actual</label>
                                 <select id="grado" required
-                                    class="w-full border border-gray-300 rounded px-3 py-2 bg-white">
+                                    class="w-full border border-gray-300 rounded px-3 py-2 bg-white disabled:bg-gray-100 disabled:text-gray-500">
                                     <option value=""></option>
                                     <option value="PARVULARIA 4">PARVULARIA 4</option>
                                     <option value="PARVULARIA 5">PARVULARIA 5</option>
@@ -227,6 +236,58 @@
             if (filtroFecha) filtroFecha.value = hoyFormateado;
         });
 
+        // ==========================================
+        //  NUEVAS FUNCIONES PARA EL MODO DOCENTE
+        // ==========================================
+        function toggleDocente() {
+            const esDocente = document.getElementById('checkbox-docente').checked;
+            const selectGrado = document.getElementById('grado');
+            const labelNie = document.getElementById('label-nie');
+            const inputNie = document.getElementById('nie');
+
+            if (esDocente) {
+                // Cambiar etiqueta a NIE/DUI
+                labelNie.innerText = "NIE/DUI";
+
+                // Agregar opción DOCENTE si no existe dinámicamente
+                if (!Array.from(selectGrado.options).some(opt => opt.value === 'DOCENTE')) {
+                    const opt = document.createElement('option');
+                    opt.value = 'DOCENTE';
+                    opt.textContent = 'DOCENTE';
+                    selectGrado.appendChild(opt);
+                }
+
+                // Seleccionar DOCENTE y deshabilitar
+                selectGrado.value = 'DOCENTE';
+                selectGrado.disabled = true;
+            } else {
+                // Restaurar vista estudiante
+                labelNie.innerText = "NIE";
+
+                // Limpiar guiones en caso de que hubieran ingresado un DUI
+                inputNie.value = inputNie.value.replace(/[^0-9]/g, '');
+
+                // Habilitar y limpiar
+                selectGrado.disabled = false;
+                if (selectGrado.value === 'DOCENTE') {
+                    selectGrado.value = '';
+                }
+            }
+        }
+
+        function validarNieDui(input) {
+            const esDocente = document.getElementById('checkbox-docente').checked;
+            if (esDocente) {
+                // Permite números y el guion del DUI
+                input.value = input.value.replace(/[^0-9-]/g, '');
+            } else {
+                // Bloquea estricto a solo números (NIE)
+                input.value = input.value.replace(/[^0-9]/g, '');
+            }
+        }
+        // ==========================================
+
+
         let modoActual = 'soporte';
 
         function toggleModoEntrega() {
@@ -256,8 +317,11 @@
 
             const camposSoporte = document.querySelectorAll('.campo-soporte');
             camposSoporte.forEach(el => {
-                el.style.display = esEntrega ? 'none' : 'block';
-                const inputs = el.querySelectorAll('input, select, textarea');
+                el.style.display = esEntrega ? 'none' : 'block'; // En el CSS también se maneja con flex si hay fallos, pero block es seguro
+                if (el.classList.contains('flex')) {
+                    el.style.display = esEntrega ? 'none' : 'flex'; // Reparación para el campo checkbox que usa flex
+                }
+                const inputs = el.querySelectorAll('input:not([type="checkbox"]), select, textarea');
                 inputs.forEach(inp => {
                     inp.disabled = esEntrega;
                 });
@@ -282,12 +346,14 @@
             const esEntrega = modoActual === 'entrega';
             const cargadorEl = document.querySelector('input[name="cargador"]:checked');
 
+            const esDocente = document.getElementById('checkbox-docente').checked;
+            const gradoSeleccionado = esDocente ? "DOCENTE" : document.getElementById('grado').value;
+
             // Transacción atómica en Firebase para correlativo único instantáneo
             const correlativoRef = db.ref('ultimoCorrelativo');
 
             correlativoRef.transaction((actual) => {
                 let numActual = parseInt(actual, 10);
-                // Si no hay valor previo o es menor a 30, fuerza a empezar desde 31
                 if (isNaN(numActual) || numActual < 30) {
                     return 31;
                 }
@@ -309,7 +375,7 @@
                     codigo_ce: document.getElementById('codigo_ce').value,
                     nie: document.getElementById('nie').value,
                     nombre: document.getElementById('nombre').value.toUpperCase(),
-                    grado: document.getElementById('grado').value,
+                    grado: gradoSeleccionado,
                     telefono: document.getElementById('telefono').value,
                     serie: esEntrega ? "N/A" : document.getElementById('serie').value.toUpperCase(),
                     falla: esEntrega ? "N/A" : document.getElementById('falla').value,
@@ -335,9 +401,11 @@
                         body: JSON.stringify(payloadExcel)
                     }).catch(err => console.error("Error al sincronizar con Google Sheets:", err));
 
+                    // Limpiar el formulario y restaurar las vistas
                     document.getElementById('form-equipo').reset();
                     document.getElementById('tipo_falla').value = "HARDWARE";
                     actualizarOpcionesFalla();
+                    toggleDocente(); // Restaura el Grado y los labels a formato Estudiante normal
 
                     const msg = document.getElementById('mensaje-exito');
                     msg.innerHTML = `<i class="fas fa-check-circle mr-1"></i> ¡Registro Creado Exitosamente!<br>Nº Correlativo: <span class="text-xl font-black"># ${nuevoCorrelativo}</span>`;
@@ -366,6 +434,11 @@
                 let colorFondo = eq.estado === 'En Progreso' ? 'bg-yellow-50' : eq.estado === 'Terminado' ? 'bg-green-50' : 'bg-white';
                 const claseCargador = eq.cargador === 'SI' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
 
+                // Si es docente, ponerle color diferente a la etiqueta de grado
+                const etiquetaGrado = eq.grado === 'DOCENTE'
+                    ? `<span class="bg-blue-100 text-blue-800 px-1 py-0.5 rounded font-bold">${eq.grado}</span>`
+                    : eq.grado;
+
                 const tarjeta = document.createElement('div');
                 tarjeta.className = `${colorFondo} p-4 rounded border shadow-sm tarjeta-equipo`;
                 tarjeta.dataset.correlativo = eq.correlativo;
@@ -378,9 +451,9 @@
                     </div>
                     <div class="space-y-1 text-sm text-gray-700">
                         <p><strong>Código C.E.:</strong> <span class="bg-gray-100 px-1 rounded font-mono">${eq.codigo_ce}</span></p>
-                        <p><strong>NIE:</strong> ${eq.nie} | <strong>Tel:</strong> ${eq.telefono}</p>
-                        <p class="truncate"><strong>Estudiante:</strong> ${eq.nombre}</p>
-                        <p class="text-xs text-gray-500 font-medium"><strong>Grado:</strong> ${eq.grado}</p>
+                        <p><strong>NIE/DUI:</strong> ${eq.nie} | <strong>Tel:</strong> ${eq.telefono}</p>
+                        <p class="truncate"><strong>Nombre:</strong> ${eq.nombre}</p>
+                        <p class="text-xs text-gray-500 font-medium"><strong>Grado:</strong> ${etiquetaGrado}</p>
                         <p class="border-t pt-1 mt-1"><strong>Serie:</strong> <span class="text-blue-700 font-mono font-bold">${eq.serie}</span></p>
                         <p><strong>¿Con Cargador?:</strong> <span class="px-2 py-0.5 border rounded text-xs font-bold ${claseCargador}">${eq.cargador || 'NO'}</span></p>
                         <p class="text-red-700 font-medium"><strong>Falla:</strong> ${eq.falla}</p>
