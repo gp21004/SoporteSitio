@@ -274,7 +274,7 @@
             return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
         }
 
-        async function guardarEquipo(e) {
+        function guardarEquipo(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-guardar');
             btn.innerText = "Calculando Correlativo..."; btn.disabled = true;
@@ -282,47 +282,70 @@
             const esEntrega = modoActual === 'entrega';
             const cargadorEl = document.querySelector('input[name="cargador"]:checked');
 
-            const payloadExcel = {
-                action: 'crear',
-                fecha: obtenerFechaHoy(),
-                codigo_ce: document.getElementById('codigo_ce').value,
-                nie: document.getElementById('nie').value,
-                nombre: document.getElementById('nombre').value.toUpperCase(),
-                grado: document.getElementById('grado').value,
-                telefono: document.getElementById('telefono').value,
-                serie: esEntrega ? "N/A" : document.getElementById('serie').value.toUpperCase(),
-                falla: esEntrega ? "N/A" : document.getElementById('falla').value,
-                cargador: esEntrega ? "N/A" : (cargadorEl ? cargadorEl.value : "NO"),
-                observacion: esEntrega ? "ENTREGA" : document.getElementById('observacion').value
-            };
+            // Transacción atómica en Firebase para correlativo único instantáneo
+            const correlativoRef = db.ref('ultimoCorrelativo');
 
-            try {
-                // Fetch seguro para Google Sheets
-                const response = await fetch(URL_GOOGLE_SHEETS, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payloadExcel)
-                });
+            correlativoRef.transaction((actual) => {
+                return (actual || 0) + 1;
+            }, async (error, committed, snapshot) => {
+                if (error || !committed) {
+                    alert("Error al calcular el número correlativo. Inténtalo de nuevo.");
+                    btn.innerText = "Crear Registro";
+                    btn.disabled = false;
+                    return;
+                }
 
-                const resultado = await response.json();
+                const nuevoCorrelativo = snapshot.val();
 
-                if (resultado.status === "Éxito") {
-                    const payloadFirebase = { ...payloadExcel, correlativo: resultado.correlativo, estado: 'Pendiente', tecnico: '', timestamp: firebase.database.ServerValue.TIMESTAMP };
+                const payloadExcel = {
+                    action: 'crear',
+                    correlativo: nuevoCorrelativo,
+                    fecha: obtenerFechaHoy(),
+                    codigo_ce: document.getElementById('codigo_ce').value,
+                    nie: document.getElementById('nie').value,
+                    nombre: document.getElementById('nombre').value.toUpperCase(),
+                    grado: document.getElementById('grado').value,
+                    telefono: document.getElementById('telefono').value,
+                    serie: esEntrega ? "N/A" : document.getElementById('serie').value.toUpperCase(),
+                    falla: esEntrega ? "N/A" : document.getElementById('falla').value,
+                    cargador: esEntrega ? "N/A" : (cargadorEl ? cargadorEl.value : "NO"),
+                    observacion: esEntrega ? "ENTREGA" : document.getElementById('observacion').value
+                };
+
+                try {
+                    const payloadFirebase = {
+                        ...payloadExcel,
+                        estado: 'Pendiente',
+                        tecnico: '',
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    };
+
+                    // Guardar en Firebase de forma atómica
                     await db.ref('equipos').push().set(payloadFirebase);
+
+                    // Enviar a Google Sheets en segundo plano
+                    fetch(URL_GOOGLE_SHEETS, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(payloadExcel)
+                    }).catch(err => console.error("Error al sincronizar con Google Sheets:", err));
 
                     document.getElementById('form-equipo').reset();
                     document.getElementById('tipo_falla').value = "HARDWARE";
                     actualizarOpcionesFalla();
 
                     const msg = document.getElementById('mensaje-exito');
-                    msg.innerHTML = `<i class="fas fa-check-circle mr-1"></i> ¡Registro Creado Exitosamente!<br>Nº Correlativo: <span class="text-xl font-black"># ${resultado.correlativo}</span>`;
+                    msg.innerHTML = `<i class="fas fa-check-circle mr-1"></i> ¡Registro Creado Exitosamente!<br>Nº Correlativo: <span class="text-xl font-black"># ${nuevoCorrelativo}</span>`;
                     msg.style.display = 'block';
                     setTimeout(() => { msg.style.display = 'none'; }, 15000);
-                } else {
-                    alert("Error servidor: " + resultado.detalle);
+
+                } catch (err) {
+                    alert("Error al guardar en la base de datos: " + err.message);
+                } finally {
+                    btn.innerText = "Crear Registro";
+                    btn.disabled = false;
                 }
-            } catch (err) { alert("Error de red. Asegúrate de haber desplegado una NUEVA VERSIÓN en Google Apps Script."); }
-            finally { btn.innerText = "Crear Registro"; btn.disabled = false; }
+            });
         }
 
         db.ref('equipos').orderByChild('timestamp').on('value', (snapshot) => {
