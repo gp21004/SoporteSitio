@@ -286,7 +286,12 @@
             const correlativoRef = db.ref('ultimoCorrelativo');
 
             correlativoRef.transaction((actual) => {
-                return (actual || 0) + 1;
+                let numActual = parseInt(actual, 10);
+                // Si no hay valor previo o es menor a 30, fuerza a empezar desde 31
+                if (isNaN(numActual) || numActual < 30) {
+                    return 31;
+                }
+                return numActual + 1;
             }, async (error, committed, snapshot) => {
                 if (error || !committed) {
                     alert("Error al calcular el número correlativo. Inténtalo de nuevo.");
