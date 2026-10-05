@@ -86,12 +86,10 @@
                         </div>
 
                         <!-- Checkbox Docente -->
-                        <div
-                            class="mb-4 campo-soporte flex items-center bg-blue-50 p-2.5 rounded border border-blue-200 shadow-sm">
+                        <div class="mb-4 campo-soporte flex items-center bg-blue-50 p-2.5 rounded border border-blue-200 shadow-sm">
                             <input type="checkbox" id="checkbox-docente" onchange="toggleDocente()"
                                 class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
-                            <label for="checkbox-docente"
-                                class="ml-2 block text-sm font-bold text-blue-800 cursor-pointer">
+                            <label for="checkbox-docente" class="ml-2 block text-sm font-bold text-blue-800 cursor-pointer">
                                 <i class="fas fa-chalkboard-teacher mr-1"></i> ¿El equipo pertenece a un Docente?
                             </label>
                         </div>
@@ -99,7 +97,8 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
                                 <label id="label-nie" class="block text-sm font-semibold text-gray-700 mb-1">NIE</label>
-                                <input type="text" id="nie" required oninput="validarNieDui(this)"
+                                <input type="text" id="nie" required
+                                    oninput="validarNieDui(this)"
                                     class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                             </div>
                             <div>
@@ -236,9 +235,6 @@
             if (filtroFecha) filtroFecha.value = hoyFormateado;
         });
 
-        // ==========================================
-        //  NUEVAS FUNCIONES PARA EL MODO DOCENTE
-        // ==========================================
         function toggleDocente() {
             const esDocente = document.getElementById('checkbox-docente').checked;
             const selectGrado = document.getElementById('grado');
@@ -246,28 +242,18 @@
             const inputNie = document.getElementById('nie');
 
             if (esDocente) {
-                // Cambiar etiqueta a NIE/DUI
                 labelNie.innerText = "NIE/DUI";
-
-                // Agregar opción DOCENTE si no existe dinámicamente
                 if (!Array.from(selectGrado.options).some(opt => opt.value === 'DOCENTE')) {
                     const opt = document.createElement('option');
                     opt.value = 'DOCENTE';
                     opt.textContent = 'DOCENTE';
                     selectGrado.appendChild(opt);
                 }
-
-                // Seleccionar DOCENTE y deshabilitar
                 selectGrado.value = 'DOCENTE';
                 selectGrado.disabled = true;
             } else {
-                // Restaurar vista estudiante
                 labelNie.innerText = "NIE";
-
-                // Limpiar guiones en caso de que hubieran ingresado un DUI
                 inputNie.value = inputNie.value.replace(/[^0-9]/g, '');
-
-                // Habilitar y limpiar
                 selectGrado.disabled = false;
                 if (selectGrado.value === 'DOCENTE') {
                     selectGrado.value = '';
@@ -278,15 +264,11 @@
         function validarNieDui(input) {
             const esDocente = document.getElementById('checkbox-docente').checked;
             if (esDocente) {
-                // Permite números y el guion del DUI
                 input.value = input.value.replace(/[^0-9-]/g, '');
             } else {
-                // Bloquea estricto a solo números (NIE)
                 input.value = input.value.replace(/[^0-9]/g, '');
             }
         }
-        // ==========================================
-
 
         let modoActual = 'soporte';
 
@@ -317,9 +299,10 @@
 
             const camposSoporte = document.querySelectorAll('.campo-soporte');
             camposSoporte.forEach(el => {
-                el.style.display = esEntrega ? 'none' : 'block'; // En el CSS también se maneja con flex si hay fallos, pero block es seguro
                 if (el.classList.contains('flex')) {
-                    el.style.display = esEntrega ? 'none' : 'flex'; // Reparación para el campo checkbox que usa flex
+                    el.style.display = esEntrega ? 'none' : 'flex';
+                } else {
+                    el.style.display = esEntrega ? 'none' : 'block';
                 }
                 const inputs = el.querySelectorAll('input:not([type="checkbox"]), select, textarea');
                 inputs.forEach(inp => {
@@ -345,19 +328,20 @@
 
             const esEntrega = modoActual === 'entrega';
             const cargadorEl = document.querySelector('input[name="cargador"]:checked');
-
             const esDocente = document.getElementById('checkbox-docente').checked;
             const gradoSeleccionado = esDocente ? "DOCENTE" : document.getElementById('grado').value;
 
-            // Transacción atómica en Firebase para correlativo único instantáneo
-            const correlativoRef = db.ref('ultimoCorrelativo');
+            const fechaHoy = obtenerFechaHoy();
+            const contadorRef = db.ref('contadorDiario');
 
-            correlativoRef.transaction((actual) => {
-                let numActual = parseInt(actual, 10);
-                if (isNaN(numActual) || numActual < 30) {
-                    return 31;
+            // Transacción con validación de fecha diaria
+            contadorRef.transaction((actual) => {
+                // Si no hay datos o la fecha registrada es distinta a la fecha de hoy, inicia en 1
+                if (!actual || actual.fecha !== fechaHoy) {
+                    return { fecha: fechaHoy, contador: 1 };
                 }
-                return numActual + 1;
+                // Si estamos en el mismo día, incrementa en 1
+                return { fecha: fechaHoy, contador: (parseInt(actual.contador, 10) || 0) + 1 };
             }, async (error, committed, snapshot) => {
                 if (error || !committed) {
                     alert("Error al calcular el número correlativo. Inténtalo de nuevo.");
@@ -366,12 +350,12 @@
                     return;
                 }
 
-                const nuevoCorrelativo = snapshot.val();
+                const nuevoCorrelativo = snapshot.val().contador;
 
                 const payloadExcel = {
                     action: 'crear',
                     correlativo: nuevoCorrelativo,
-                    fecha: obtenerFechaHoy(),
+                    fecha: fechaHoy,
                     codigo_ce: document.getElementById('codigo_ce').value,
                     nie: document.getElementById('nie').value,
                     nombre: document.getElementById('nombre').value.toUpperCase(),
@@ -391,21 +375,18 @@
                         timestamp: firebase.database.ServerValue.TIMESTAMP
                     };
 
-                    // Guardar en Firebase de forma atómica
                     await db.ref('equipos').push().set(payloadFirebase);
 
-                    // Enviar a Google Sheets en segundo plano
                     fetch(URL_GOOGLE_SHEETS, {
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify(payloadExcel)
                     }).catch(err => console.error("Error al sincronizar con Google Sheets:", err));
 
-                    // Limpiar el formulario y restaurar las vistas
                     document.getElementById('form-equipo').reset();
                     document.getElementById('tipo_falla').value = "HARDWARE";
                     actualizarOpcionesFalla();
-                    toggleDocente(); // Restaura el Grado y los labels a formato Estudiante normal
+                    toggleDocente();
 
                     const msg = document.getElementById('mensaje-exito');
                     msg.innerHTML = `<i class="fas fa-check-circle mr-1"></i> ¡Registro Creado Exitosamente!<br>Nº Correlativo: <span class="text-xl font-black"># ${nuevoCorrelativo}</span>`;
@@ -434,9 +415,8 @@
                 let colorFondo = eq.estado === 'En Progreso' ? 'bg-yellow-50' : eq.estado === 'Terminado' ? 'bg-green-50' : 'bg-white';
                 const claseCargador = eq.cargador === 'SI' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
 
-                // Si es docente, ponerle color diferente a la etiqueta de grado
-                const etiquetaGrado = eq.grado === 'DOCENTE'
-                    ? `<span class="bg-blue-100 text-blue-800 px-1 py-0.5 rounded font-bold">${eq.grado}</span>`
+                const etiquetaGrado = eq.grado === 'DOCENTE' 
+                    ? `<span class="bg-blue-100 text-blue-800 px-1 py-0.5 rounded font-bold">${eq.grado}</span>` 
                     : eq.grado;
 
                 const tarjeta = document.createElement('div');
@@ -500,7 +480,6 @@
                 contenedor.appendChild(tarjeta);
             });
 
-            // Reaplicar el filtro por si hay una búsqueda activa
             filtrarCorrelativo();
         });
 
